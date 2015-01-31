@@ -1,0 +1,22 @@
+nginx:
+   status: service
+avahi-daemon:
+   status: service
+bind9:
+   status: service
+dovecot:
+   status: service
+postfix:
+   status: service
+mysql:
+   status: service
+glances:
+   status: service
+ssh:
+   status: service
+metronome:
+   status: metronomectl status
+samba:
+   status: service
+slapd:
+   status: service

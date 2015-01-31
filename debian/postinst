@@ -1,0 +1,197 @@
+#!/bin/bash
+
+HOSTNAME=$(hostname -f)
+
+TMP="/usr/share/yunohost/yunohost-config"
+
+function randpass() {
+  [ "$2" == "0" ] && CHAR="[:alnum:]" || CHAR="[:graph:]"
+    cat /dev/urandom | tr -cd "$CHAR" | head -c ${1:-32}
+    echo
+}
+
+if [ ! -d /etc/yunohost ];
+then
+	mkdir /etc/yunohost
+fi
+
+if [ -f /etc/yunohost/current_host ];
+then
+        DOMAIN=$(cat /etc/yunohost/current_host)
+	find $TMP/others -type f -exec sed -i "s/yunohost.org/$DOMAIN/g" {} \;
+else
+	cp $TMP/others/current_host /etc/yunohost/current_host
+fi
+
+# Hosts
+#if ! grep -Fq "yunohost.org" /etc/hosts || ! grep -Fq "$DOMAIN" /etc/hosts
+#then
+#       cp $TMP/others/hosts /etc/
+#fi
+
+# SSL
+#SSL
+mkdir -p /usr/share/yunohost/yunohost-config/ssl/yunoCA/{ca,certs,crl,newcerts}
+if [ ! -f /usr/share/yunohost/yunohost-config/ssl/yunoCA/serial ];
+then
+    echo "01" > /usr/share/yunohost/yunohost-config/ssl/yunoCA/serial
+fi
+
+if [ ! -f /etc/yunohost/certs/yunohost.org/ca.pem ];
+then
+	mkdir -p /etc/yunohost/certs/yunohost.org/
+	openssl req -x509 -new -config $TMP/ssl/yunoCA/openssl.cnf -days 3650 -out $TMP/ssl/yunoCA/ca/cacert.pem -keyout $TMP/ssl/yunoCA/ca/cakey.pem -nodes -batch
+fi
+
+if [ ! -f /etc/yunohost/certs/yunohost.org/crt.pem ];
+then
+	openssl req -new -config $TMP/ssl/yunoCA/openssl.cnf -days 730 -out $TMP/ssl/yunoCA/certs/yunohost_csr.pem -keyout $TMP/ssl/yunoCA/certs/yunohost_key.pem -nodes -batch 
+	openssl ca -config $TMP/ssl/yunoCA/openssl.cnf -days 730 -in $TMP/ssl/yunoCA/certs/yunohost_csr.pem -out $TMP/ssl/yunoCA/certs/yunohost_crt.pem -batch
+	cp $TMP/ssl/yunoCA/ca/cacert.pem /etc/yunohost/certs/yunohost.org/ca.pem
+	cp $TMP/ssl/yunoCA/certs/yunohost_key.pem /etc/yunohost/certs/yunohost.org/key.pem
+	cp $TMP/ssl/yunoCA/newcerts/01.pem /etc/yunohost/certs/yunohost.org/crt.pem
+	ln -s /etc/yunohost/certs/yunohost.org/crt.pem /etc/ssl/certs/yunohost_crt.pem
+	ln -s /etc/yunohost/certs/yunohost.org/key.pem /etc/ssl/private/yunohost_key.pem
+	ln -s /etc/yunohost/certs/yunohost.org/ca.pem /etc/ssl/certs/ca-yunohost_crt.pem
+        update-ca-certificates
+fi
+
+#Iptables
+update-rc.d iptables remove
+update-rc.d yunohost-firewall defaults
+
+#nssswitch
+if ! grep -Fq "sudoers" /etc/nsswitch.conf ; then
+echo -e "sudoers:\tldap files" >> /etc/nsswitch.conf
+fi
+
+#SSH
+if [ ! -f /etc/yunohost/yunohost.conf ] || [ $(grep ssh /etc/yunohost/yunohost.conf | cut -d= -f2) = "no" ];
+then
+	cp $TMP/others/sshd_config* /etc/ssh/
+        if [ ! -f /proc/net/if_inet6 ];
+        then
+                mv /etc/ssh/sshd_config-ipv4 /etc/ssh/sshd_config
+        fi
+
+	service ssh restart
+fi
+
+#Prompt
+cp $TMP/others/boot_prompt.sh /etc/init.d/
+chmod +x /etc/init.d/boot_prompt.sh
+update-rc.d boot_prompt.sh defaults
+
+#PAM
+if [ ! -f /usr/share/pam-configs/my_mkhomedir ];
+then
+	cp $TMP/others/my_mkhomedir /usr/share/pam-configs/my_mkhomedir
+	pam-auth-update --package
+fi
+
+#Admin confs
+if [ ! -f /etc/yunohost/installed ];
+then
+	if [ ! -f /etc/yunohost/from_script ];
+	then
+		cp $TMP/others/bashrc /root/.bashrc
+		cp $TMP/others/vimrc /root/.vimrc
+	fi
+fi
+
+#Profile
+if [ ! -f /etc/skel/.bashrc ];
+then
+	cp $TMP/others/bashrc /etc/skel/.bashrc
+fi
+
+if [ ! -f /etc/skel/.vimrc ];
+then
+	cp $TMP/others/vimrc /etc/skel/.vimrc
+fi
+
+#Others
+cp $TMP/others/issue.net /etc/issue.net
+
+#Root password
+#if [ ! -f /etc/yunohost/yunohost-config/others/password ]; then
+#	chage -d 0 root
+#	touch /etc/yunohost/yunohost-config/others/password
+#fi
+
+#Unattended-upgrades
+#if grep -Fq "Unattended-Upgrade" /etc/apt/apt.conf.d/02periodic
+#then
+#	cp $TMP/unattended/* /etc/apt/apt.conf.d/
+#fi
+
+# IPv6
+if [ ! -f /etc/yunohost/ula ];
+then
+     array=( 1 2 3 4 5 6 7 8 9 0 a b c d e f )
+     a=${array[$RANDOM%16]}${array[$RANDOM%16]}${array[$RANDOM%16]}${array[$RANDOM%16]}
+     b=${array[$RANDOM%16]}${array[$RANDOM%16]}${array[$RANDOM%16]}${array[$RANDOM%16]}
+     echo "fd42:$a:$b::" > /etc/yunohost/ula
+fi
+
+if [ ! -f /etc/sysctl.d/ipv6_forwarding.conf ];
+then
+    echo "net.ipv6.conf.all.forwarding = 1" > /etc/sysctl.d/ipv6_forwarding.conf
+    sysctl -p /etc/sysctl.d/ipv6_forwarding.conf
+fi
+
+# Interface
+if [ ! -f /etc/yunohost/interface ];
+then
+    ifconfig | grep eth
+    if [[ $? -eq 0 ]]
+    then
+        iface=$(ifconfig | grep eth | head -n 1 |  awk '{print $1}')
+        echo $iface > /etc/yunohost/interface
+    else
+        echo "wlan0" > /etc/yunohost/interface
+    fi
+fi
+
+# RADVD
+#cp $TMP/others/radvd.conf /etc/
+#if [ -f /etc/yunohost/ula ];
+#then
+#    sed -i "s@IFACE@$(cat /etc/yunohost/interface)@g" /etc/radvd.conf
+#    sed -i "s@PFIX@$(cat /etc/yunohost/ula)/64@g" /etc/radvd.conf
+#    service radvd restart
+#    update-rc.d radvd defaults
+#fi
+
+# Avahi Daemon
+if [ ! -f /etc/yunohost/yunohost.conf ] || [ "$(grep avahi /etc/yunohost/yunohost.conf | cut -d= -f2)" = "no" ];
+then
+    cp $TMP/others/avahi-daemon.conf /etc/avahi/avahi-daemon.conf
+    update-rc.d avahi-daemon defaults
+    service avahi-daemon restart
+fi
+
+# Fail2ban
+cp -r $TMP/fail2ban/* /etc/fail2ban/
+if [ ! -f /etc/fail2ban/jail.local ];
+then
+	touch /etc/fail2ban/jail.local
+fi
+service yunohost-firewall restart
+
+# udisks-glue
+if [ ! -f /etc/yunohost/yunohost.conf ] || [ ! "$(grep udisks-glue /etc/yunohost/yunohost.conf | cut -d= -f2)" = "yes" ];
+then
+    # If python-udiskie exists
+    if [[ "$(ps faux | grep udiskie | wc -l)" -gt 1 ]];
+    then
+        service udiskie stop > /dev/null 2>&1
+        killall udiskie > /dev/null 2>&1
+        update-rc.d udiskie remove > /dev/null 2>&1
+        umount /media/* > /dev/null 2>&1
+    fi
+    cp $TMP/others/udisks-glue.conf /etc/udisks-glue.conf
+    service udisks-glue restart
+    update-rc.d udisks-glue defaults
+fi
+
