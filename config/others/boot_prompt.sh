@@ -115,7 +115,7 @@ echo -E " mmmp         7mmm#,        ,mmmm ${address[6]}" >> /etc/issue
 echo -E " mmm#                       :mmmm ${address[7]}" >> /etc/issue
 echo -E " mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm ${address[8]}" >> /etc/issue
 echo -E " mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm ${address[9]}" >> /etc/issue
-echo -e "\n      \e[0;30;47m You probably whant to connect on your server with this IP: ${ip} \e[0m\n" >> /etc/issue
+[ $ip ] && echo -e "\n      \e[0;30;47m You probably whant to connect on your server with this IP: ${ip} \e[0m\n" >> /etc/issue
 
 if [[ ! -f /etc/yunohost/installed ]]
 then
