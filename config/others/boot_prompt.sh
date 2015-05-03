@@ -87,25 +87,35 @@ usedmem="$(((($memtotal - $memfree) - $membuffer - $memcached) / $human))"
 totalmem="$(($memtotal / $human))"
 mem="${usedmem}MB / ${totalmem}MB"
 
-ip=`/sbin/ifconfig | sed '/Bcast/!d' | awk '{print $2}' | sed 's/.*\://'`
+declare -A address
+j=0
+for i in $(ip address | egrep '^\w:.*BROADCAST'| grep -v DOWN | awk '{print $2}'| sed 's/://'); do
+  addr6=$(ip addr show $i | grep '.*inet6\s.*' | awk '{print $2}' | sed ':a;N;$!ba;s/\n/ /g')
+  addr4=$(ip addr show $i | grep '.*inet\s.*' | awk '{print $2}' | sed 's#/\w*##' | sed ':a;N;$!ba;s/\n/ /g')
+  [ ! $addr6 ] && [ ! $addr4 ] && continue
+  [[ $i == eth* ]] && [ $addr4 ] && ip=$addr4
+  addrs="IPs of interface "$i": addr6: "$addr6", addr4: "$addr4
+  address[$j]=$addrs
+  j=$((j+1)) 
+done
 
 echo -e "\n mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm Yunohost v2" > /etc/issue
 echo -E " mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm Kernel: $(uname -m) $(uname -r)" >> /etc/issue
 echo -E " mmmQ                       Ymmmm Uptime: ${uptime}" >> /etc/issue
 echo -E " mmm#   .2A929     .12iQ7   :mmmm CPU: ${cpu}" >> /etc/issue
 echo -E " mmmp    ;mmmm#   :mmmmp.   ,mmmm RAM: ${mem}" >> /etc/issue
-echo -E " mmm#     ,mmmQ5 .Ymmmp     :mmmm IP: ${ip}" >> /etc/issue
-echo -E " mmmp      ,mmmp ,mmmp      ,mmmm Domain: $(cat /etc/yunohost/current_host)" >> /etc/issue
-echo -E " mmm#       ;mmmmNmmp       :mmmm " >> /etc/issue
-echo -E " mmmp       .YmmmmmA;       ,mmmm " >> /etc/issue
-echo -E " mmm#        .KmmmQY        :mmmm " >> /etc/issue
-echo -E " mmmp         :mmm#         ,mmmm " >> /etc/issue
-echo -E " mmm#        .7mmmp,        :mmmm " >> /etc/issue
-echo -E " mmmp         7mmm#,        ,mmmm " >> /etc/issue
-echo -E " mmm#                       :mmmm " >> /etc/issue
-echo -E " mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm " >> /etc/issue
-echo -E " mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm " >> /etc/issue
-echo -e "\n      \e[0;30;47m Server IP: ${ip} \e[0m\n" >> /etc/issue
+echo -E " mmm#     ,mmmQ5 .Ymmmp     :mmmm Domain: $(cat /etc/yunohost/current_host)" >> /etc/issue
+echo -E " mmmp      ,mmmp ,mmmp      ,mmmm ${address[0]}" >> /etc/issue
+echo -E " mmm#       ;mmmmNmmp       :mmmm ${address[1]}" >> /etc/issue
+echo -E " mmmp       .YmmmmmA;       ,mmmm ${address[2]}" >> /etc/issue
+echo -E " mmm#        .KmmmQY        :mmmm ${address[3]}" >> /etc/issue
+echo -E " mmmp         :mmm#         ,mmmm ${address[4]}" >> /etc/issue
+echo -E " mmm#        .7mmmp,        :mmmm ${address[5]}" >> /etc/issue
+echo -E " mmmp         7mmm#,        ,mmmm ${address[6]}" >> /etc/issue
+echo -E " mmm#                       :mmmm ${address[7]}" >> /etc/issue
+echo -E " mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm ${address[8]}" >> /etc/issue
+echo -E " mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm ${address[9]}" >> /etc/issue
+[ $ip ] && echo -e "\n      \e[0;30;47m You probably whant to connect on your server with this IP: ${ip} \e[0m\n" >> /etc/issue
 
 if [[ ! -f /etc/yunohost/installed ]]
 then
@@ -113,7 +123,7 @@ then
         then
 		echo -e "\n mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm Yunohost v2"
 		echo -E " mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm " 
-		echo -E " mmmQ                       Ymmmm IP: ${ip}" 
+		echo -E " mmmQ                       Ymmmm ${ip}" 
 		echo -E " mmm#   .2A929     .12iQ7   :mmmm " 
 		echo -E " mmmp    ;mmmm#   :mmmmp.   ,mmmm " 
 		echo -E " mmm#     ,mmmQ5 .Ymmmp     :mmmm " 
