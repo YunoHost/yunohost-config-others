@@ -89,7 +89,7 @@ mem="${usedmem}MB / ${totalmem}MB"
 
 declare -A address
 j=0
-for i in $(ip address | egrep '^\w:.*BROADCAST'| grep -v DOWN | awk '{print $2}'| sed 's/://'); do
+for i in $(ip address | egrep '^\w:.*(BROADCAST|POINTOPOINT)'| grep -v DOWN | awk '{print $2}'| sed 's/://' | sed 's/@NONE//'); do
   addr6=$(ip addr show $i | grep '.*inet6\s.*' | awk '{print $2}' | sed ':a;N;$!ba;s/\n/ /g')
   addr4=$(ip addr show $i | grep '.*inet\s.*' | awk '{print $2}' | sed 's#/\w*##' | sed ':a;N;$!ba;s/\n/ /g')
   [ ! $addr6 ] && [ ! $addr4 ] && continue
