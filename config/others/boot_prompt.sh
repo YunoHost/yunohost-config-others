@@ -89,11 +89,11 @@ mem="${usedmem}MB / ${totalmem}MB"
 
 declare -A address
 j=0
-for i in $(ip address | egrep '^\w:.*(BROADCAST|POINTOPOINT)'| grep -v DOWN | awk '{print $2}'| sed 's/://' | sed 's/@NONE//'); do
+for i in $(ip address | egrep '^\w*:.*(BROADCAST|POINTOPOINT)'| grep -v DOWN | awk '{print $2}'| sed 's/://' | sed 's/@NONE//'); do
   addr6=$(ip addr show $i | grep '.*inet6\s.*' | awk '{print $2}' | sed ':a;N;$!ba;s/\n/ /g')
   addr4=$(ip addr show $i | grep '.*inet\s.*' | awk '{print $2}' | sed 's#/\w*##' | sed ':a;N;$!ba;s/\n/ /g')
-  [ ! $addr6 ] && [ ! $addr4 ] && continue
-  [[ $i == eth* ]] && [ $addr4 ] && ip=$addr4
+  [ ! "$addr6" ] && [ ! "$addr4" ] && continue
+  [[ $i == eth* ]] && [ "$addr4" ] && ip=$addr4
   addrs="IPs of interface "$i": addr6: "$addr6", addr4: "$addr4
   address[$j]=$addrs
   j=$((j+1)) 
@@ -115,7 +115,7 @@ echo -E " mmmp         7mmm#,        ,mmmm ${address[6]}" >> /etc/issue
 echo -E " mmm#                       :mmmm ${address[7]}" >> /etc/issue
 echo -E " mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm ${address[8]}" >> /etc/issue
 echo -E " mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm ${address[9]}" >> /etc/issue
-[ $ip ] && echo -e "\n      \e[0;30;47m You probably whant to connect on your server with this IP: ${ip} \e[0m\n" >> /etc/issue
+[ "$ip" ] && echo -e "\n      \e[0;30;47m You probably whant to connect on your server with this IP: ${ip} \e[0m\n" >> /etc/issue
 
 if [[ ! -f /etc/yunohost/installed ]]
 then
