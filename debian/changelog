@@ -1,3 +1,16 @@
+yunohost-config-others (2.1.2) testing; urgency=low
+
+  [ Roust ]
+  * Improve security
+
+  [ Émile Morel ]
+  * boot_prompt.sh - improve prompted IPs and handle ipv6
+  * boot-prompt.sh - echo IP only if we find it
+  * boot_prompt.sh - handle pointtopoint interfaces (like vpn for instance)
+  * boot_prompt.sh - fix more than one digit for interfaces
+
+ -- kload <kload@kload.fr>  Mon, 04 May 2015 16:28:12 +0200
+
 yunohost-config-others (2.1.1) testing; urgency=low
 
   * Bump version to 2.1.1 to bootstrap new build workflow
