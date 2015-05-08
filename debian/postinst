@@ -173,6 +173,10 @@ fi
 
 # Fail2ban
 cp -r $TMP/fail2ban/* /etc/fail2ban/
+if [ $(lsb_release -c | awk '{print $2}') = jessie ];
+then
+	mv /etc/fail2ban/jail-jessie.conf /etc/fail2ban/jail.conf
+fi
 if [ ! -f /etc/fail2ban/jail.local ];
 then
 	touch /etc/fail2ban/jail.local
@@ -193,5 +197,12 @@ then
     cp $TMP/others/udisks-glue.conf /etc/udisks-glue.conf
     service udisks-glue restart
     update-rc.d udisks-glue defaults
+fi
+
+
+# Glances
+if [ $(lsb_release -c | awk '{print $2}') = jessie ];
+then
+        cp $TMP/others/glances /etc/default/
 fi
 
