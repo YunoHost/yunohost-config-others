@@ -78,9 +78,21 @@ then
 fi
 
 #Prompt
-cp $TMP/others/boot_prompt.sh /etc/init.d/
-chmod +x /etc/init.d/boot_prompt.sh
-update-rc.d boot_prompt.sh defaults
+VERSION=$(sed 's/\..*//' /etc/debian_version)
+if [[ "$VERSION" == '7' ]]; then
+	cp $TMP/others/boot_prompt.sh /etc/init.d/
+	chmod +x /etc/init.d/boot_prompt.sh
+	update-rc.d boot_prompt.sh defaults
+else
+	if [  -f /etc/init.d/boot_prompt.sh ]; then
+		rm /etc/init.d/boot_prompt.sh
+		update-rc.d boot_prompt.sh remove
+	fi
+	cp $TMP/others/boot_prompt.sh /usr/local/bin
+	chmod +x /etc/local/bin/boot_prompt.sh
+	cp $TMP/others/boot_prompt.service /lib/systemd/system/
+	systemctl enable boot_prompt.service
+fi
 
 #PAM
 if [ ! -f /usr/share/pam-configs/my_mkhomedir ];
