@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+# Save index.txt since it will be removed.... Sorry about that.
+index_file=/usr/share/yunohost/yunohost-config/ssl/yunoCA/index.txt
+if [ -f "${index_file}" ]; then
+    cp "${index_file}" "${index_file}.saved"
+fi
