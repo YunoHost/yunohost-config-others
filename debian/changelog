@@ -1,3 +1,20 @@
+yunohost-config-others (2.2.1) stable; urgency=low
+
+  [ JocelynDelalande ]
+  * Current conf is preventing to accept ipv6 RA
+
+  [ David Baumgartner ]
+  * Fixing typo
+
+  [ Julien Malik ]
+  * Add dependency to moulinette-yunohost
+  * Typo on control file conflicts->Conflicts
+
+  [ Jérôme Lebleu ]
+  * [fix] Save the index.txt for CA before removing the package
+
+ -- Jérôme Lebleu <jerome@yunohost.org>  Wed, 18 May 2016 10:18:33 +0200
+
 yunohost-config-others (2.2.0) stable; urgency=low
 
   * Bumping version to 2.2.0
